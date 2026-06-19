@@ -12,6 +12,10 @@ const CATEGORIES: { value: BlockCategory; label: string }[] = [
   { value: 'fitness', label: 'Fitness' },
   { value: 'self-improvement', label: 'Self Improvement' },
   { value: 'work', label: 'Work' },
+  { value: 'chores', label: 'Chores' },
+  { value: 'cooking', label: 'Cooking' },
+  { value: 'free-time', label: 'Free Time' },
+  { value: 'sleep', label: 'Sleep' },
   { value: 'personal', label: 'Personal' },
   { value: 'preallocated', label: 'Pre-allocated' },
 ];

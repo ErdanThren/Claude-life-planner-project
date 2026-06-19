@@ -15,6 +15,10 @@ const CATEGORY_COLORS: Record<BlockCategory, string> = {
   fitness: '#22c55e',
   'self-improvement': '#a855f7',
   work: '#3b82f6',
+  chores: '#f97316',
+  cooking: '#ec4899',
+  'free-time': '#06b6d4',
+  sleep: '#1d4ed8',
   personal: '#f59e0b',
   preallocated: '#6b7280',
 };

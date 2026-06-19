@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   format,
   startOfWeek,
@@ -11,11 +11,14 @@ import {
 } from 'date-fns';
 import { TimeBlock, ViewMode } from './types';
 import { useBlocks } from './hooks/useBlocks';
+import { useSettings } from './hooks/useSettings';
 import { autoScheduleWeek } from './utils/autoSchedule';
 import WeekView from './components/WeekView';
 import MonthView from './components/MonthView';
 import BlockModal from './components/BlockModal';
 import AutoScheduleModal from './components/AutoScheduleModal';
+import SettingsModal from './components/SettingsModal';
+import AISuggestionsPanel from './components/AISuggestionsPanel';
 import Legend from './components/Legend';
 import './App.css';
 
@@ -24,8 +27,11 @@ export default function App() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [editingBlock, setEditingBlock] = useState<Partial<TimeBlock> | null>(null);
   const [showAutoModal, setShowAutoModal] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [aiBlock, setAiBlock] = useState<TimeBlock | null>(null);
 
   const { blocks, addBlock, updateBlock, removeBlock, addBlocks, removeAutoScheduled } = useBlocks();
+  const { settings, updateSettings } = useSettings();
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
@@ -56,7 +62,11 @@ export default function App() {
   }
 
   function handleBlockClick(block: TimeBlock) {
-    setEditingBlock(block);
+    if (block.category === 'fitness' || block.category === 'cooking') {
+      setAiBlock(block);
+    } else {
+      setEditingBlock(block);
+    }
   }
 
   function handleSaveBlock(data: Omit<TimeBlock, 'id'>) {
@@ -82,6 +92,8 @@ export default function App() {
     setShowAutoModal(false);
   }
 
+  const hasApiKey = !!settings.anthropicApiKey;
+
   return (
     <div className="app">
       <header className="app-header">
@@ -91,6 +103,13 @@ export default function App() {
         </div>
         <div className="header-right">
           <Legend />
+          <button
+            className={`btn btn-secondary settings-btn ${!hasApiKey ? 'settings-btn-alert' : ''}`}
+            onClick={() => setShowSettings(true)}
+            title="Settings"
+          >
+            ⚙ Settings{!hasApiKey && ' ·  AI'}
+          </button>
         </div>
       </header>
 
@@ -172,6 +191,22 @@ export default function App() {
           weekLabel={getNavLabel()}
           onSchedule={handleAutoSchedule}
           onClose={() => setShowAutoModal(false)}
+        />
+      )}
+
+      {showSettings && (
+        <SettingsModal
+          settings={settings}
+          onSave={updateSettings}
+          onClose={() => setShowSettings(false)}
+        />
+      )}
+
+      {aiBlock && (
+        <AISuggestionsPanel
+          block={aiBlock}
+          settings={settings}
+          onClose={() => setAiBlock(null)}
         />
       )}
     </div>

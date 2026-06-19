@@ -1,4 +1,13 @@
-export type BlockCategory = 'fitness' | 'self-improvement' | 'work' | 'personal' | 'preallocated';
+export type BlockCategory =
+  | 'fitness'
+  | 'self-improvement'
+  | 'work'
+  | 'chores'
+  | 'cooking'
+  | 'free-time'
+  | 'sleep'
+  | 'personal'
+  | 'preallocated';
 
 export interface TimeBlock {
   id: string;
@@ -16,7 +25,19 @@ export type ViewMode = 'week' | 'month';
 export interface AutoSchedulePrefs {
   fitnessDuration: number; // minutes
   selfImprovementDuration: number; // minutes
-  mode: 'separate' | 'alternate'; // schedule both or alternate
-  preferredStartHour: number; // e.g. 6 for 6am
-  preferredEndHour: number; // e.g. 22 for 10pm
+  choresDuration: number; // minutes
+  cookingDuration: number; // minutes
+  freeTimeDuration: number; // minutes
+  sleepStart: string; // HH:MM
+  sleepEnd: string; // HH:MM
+  mode: 'separate' | 'alternate';
+  preferredStartHour: number;
+  preferredEndHour: number;
+}
+
+export interface AppSettings {
+  anthropicApiKey: string;
+  weightLossGoal: boolean;
+  corefitnessGoal: boolean;
+  dietaryPreferences: string;
 }

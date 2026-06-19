@@ -4,6 +4,10 @@ const items = [
   { label: 'Fitness', color: '#22c55e' },
   { label: 'Self Improvement', color: '#a855f7' },
   { label: 'Work', color: '#3b82f6' },
+  { label: 'Chores', color: '#f97316' },
+  { label: 'Cooking', color: '#ec4899' },
+  { label: 'Free Time', color: '#06b6d4' },
+  { label: 'Sleep', color: '#1d4ed8' },
   { label: 'Personal', color: '#f59e0b' },
   { label: 'Pre-allocated', color: '#6b7280' },
 ];
