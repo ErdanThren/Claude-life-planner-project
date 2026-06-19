@@ -9,16 +9,20 @@ import {
   subMonths,
   eachDayOfInterval,
 } from 'date-fns';
-import { TimeBlock, ViewMode } from './types';
+import { TimeBlock, TodoItem, ViewMode } from './types';
 import { useBlocks } from './hooks/useBlocks';
 import { useSettings } from './hooks/useSettings';
+import { useTodos } from './hooks/useTodos';
 import { autoScheduleWeek } from './utils/autoSchedule';
+import { isTodoActiveOnDate, isTodoCompletedOnDate } from './utils/todoUtils';
 import WeekView from './components/WeekView';
 import MonthView from './components/MonthView';
+import TasksPanel from './components/TasksPanel';
 import BlockModal from './components/BlockModal';
 import AutoScheduleModal from './components/AutoScheduleModal';
 import SettingsModal from './components/SettingsModal';
 import AISuggestionsPanel from './components/AISuggestionsPanel';
+import TodoModal from './components/TodoModal';
 import Legend from './components/Legend';
 import './App.css';
 
@@ -29,9 +33,12 @@ export default function App() {
   const [showAutoModal, setShowAutoModal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [aiBlock, setAiBlock] = useState<TimeBlock | null>(null);
+  const [editingTodo, setEditingTodo] = useState<Partial<TodoItem> | null>(null);
+  const [newTodoDate, setNewTodoDate] = useState<string | undefined>();
 
   const { blocks, addBlock, updateBlock, removeBlock, addBlocks, removeAutoScheduled } = useBlocks();
   const { settings, updateSettings } = useSettings();
+  const { todos, addTodo, updateTodo, removeTodo, toggleComplete } = useTodos();
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
@@ -49,7 +56,8 @@ export default function App() {
     if (view === 'week') {
       return `${format(weekStart, 'MMM d')} – ${format(weekEnd, 'MMM d, yyyy')}`;
     }
-    return format(currentDate, 'MMMM yyyy');
+    if (view === 'month') return format(currentDate, 'MMMM yyyy');
+    return 'Tasks';
   }
 
   function handleDayClick(date: Date, hour = 9) {
@@ -79,9 +87,7 @@ export default function App() {
   }
 
   function handleDeleteBlock() {
-    if (editingBlock?.id) {
-      removeBlock(editingBlock.id);
-    }
+    if (editingBlock?.id) removeBlock(editingBlock.id);
     setEditingBlock(null);
   }
 
@@ -92,7 +98,33 @@ export default function App() {
     setShowAutoModal(false);
   }
 
+  function handleSaveTodo(data: Omit<TodoItem, 'id' | 'completedDates' | 'createdAt'>) {
+    if (editingTodo?.id) {
+      updateTodo(editingTodo.id, data);
+    } else {
+      addTodo(data);
+    }
+    setEditingTodo(null);
+    setNewTodoDate(undefined);
+  }
+
+  function handleDeleteTodo() {
+    if (editingTodo?.id) removeTodo(editingTodo.id);
+    setEditingTodo(null);
+    setNewTodoDate(undefined);
+  }
+
+  function openNewTodo(dateStr?: string) {
+    setNewTodoDate(dateStr);
+    setEditingTodo({});
+  }
+
   const hasApiKey = !!settings.anthropicApiKey;
+  const showNav = view !== 'tasks';
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const pendingTodayCount = todos.filter(
+    (t) => isTodoActiveOnDate(t, todayStr) && !isTodoCompletedOnDate(t, todayStr)
+  ).length;
 
   return (
     <div className="app">
@@ -108,71 +140,80 @@ export default function App() {
             onClick={() => setShowSettings(true)}
             title="Settings"
           >
-            ⚙ Settings{!hasApiKey && ' ·  AI'}
+            ⚙ Settings{!hasApiKey && ' · AI'}
           </button>
         </div>
       </header>
 
       <div className="toolbar">
         <div className="view-toggle">
-          <button
-            className={`toggle-btn ${view === 'week' ? 'active' : ''}`}
-            onClick={() => setView('week')}
-          >
+          <button className={`toggle-btn ${view === 'week' ? 'active' : ''}`} onClick={() => setView('week')}>
             Week
           </button>
-          <button
-            className={`toggle-btn ${view === 'month' ? 'active' : ''}`}
-            onClick={() => setView('month')}
-          >
+          <button className={`toggle-btn ${view === 'month' ? 'active' : ''}`} onClick={() => setView('month')}>
             Month
           </button>
+          <button className={`toggle-btn ${view === 'tasks' ? 'active' : ''}`} onClick={() => setView('tasks')}>
+            Tasks {pendingTodayCount > 0 && <span className="tab-badge">{pendingTodayCount}</span>}
+          </button>
         </div>
 
-        <div className="nav-controls">
-          <button className="nav-btn" onClick={() => navigate(-1)}>‹</button>
-          <span className="nav-label">{getNavLabel()}</span>
-          <button className="nav-btn" onClick={() => navigate(1)}>›</button>
-        </div>
+        {showNav && (
+          <div className="nav-controls">
+            <button className="nav-btn" onClick={() => navigate(-1)}>‹</button>
+            <span className="nav-label">{getNavLabel()}</span>
+            <button className="nav-btn" onClick={() => navigate(1)}>›</button>
+          </div>
+        )}
 
         <div className="action-btns">
-          <button
-            className="btn btn-secondary"
-            onClick={() => setCurrentDate(new Date())}
-          >
-            Today
-          </button>
+          {showNav && (
+            <button className="btn btn-secondary" onClick={() => setCurrentDate(new Date())}>
+              Today
+            </button>
+          )}
           {view === 'week' && (
-            <button
-              className="btn btn-accent"
-              onClick={() => setShowAutoModal(true)}
-            >
+            <button className="btn btn-accent" onClick={() => setShowAutoModal(true)}>
               ⚡ Auto-Schedule
             </button>
           )}
-          <button
-            className="btn btn-primary"
-            onClick={() => handleDayClick(currentDate)}
-          >
-            + Add Block
-          </button>
+          {view === 'tasks' ? (
+            <button className="btn btn-primary" onClick={() => openNewTodo()}>
+              + Add Task
+            </button>
+          ) : (
+            <button className="btn btn-primary" onClick={() => handleDayClick(currentDate)}>
+              + Add Block
+            </button>
+          )}
         </div>
       </div>
 
       <main className="calendar-area">
-        {view === 'week' ? (
+        {view === 'week' && (
           <WeekView
             weekDays={weekDays}
             blocks={blocks}
+            todos={todos}
             onDayClick={handleDayClick}
             onBlockClick={handleBlockClick}
           />
-        ) : (
+        )}
+        {view === 'month' && (
           <MonthView
             currentMonth={currentDate}
             blocks={blocks}
             onDayClick={handleDayClick}
             onBlockClick={handleBlockClick}
+          />
+        )}
+        {view === 'tasks' && (
+          <TasksPanel
+            todos={todos}
+            currentDate={currentDate}
+            onToggle={toggleComplete}
+            onEdit={(todo) => setEditingTodo(todo)}
+            onAdd={() => openNewTodo()}
           />
         )}
       </main>
@@ -207,6 +248,16 @@ export default function App() {
           block={aiBlock}
           settings={settings}
           onClose={() => setAiBlock(null)}
+        />
+      )}
+
+      {editingTodo !== null && (
+        <TodoModal
+          initial={editingTodo}
+          defaultDate={newTodoDate}
+          onSave={handleSaveTodo}
+          onDelete={editingTodo.id ? handleDeleteTodo : undefined}
+          onClose={() => { setEditingTodo(null); setNewTodoDate(undefined); }}
         />
       )}
     </div>

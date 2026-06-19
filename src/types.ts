@@ -20,7 +20,7 @@ export interface TimeBlock {
   isAutoScheduled?: boolean;
 }
 
-export type ViewMode = 'week' | 'month';
+export type ViewMode = 'week' | 'month' | 'tasks';
 
 export interface AutoSchedulePrefs {
   fitnessDuration: number; // minutes
@@ -41,3 +41,23 @@ export interface AppSettings {
   corefitnessGoal: boolean;
   dietaryPreferences: string;
 }
+
+// ── Todo / Recurring Chores ──────────────────────
+
+export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'custom';
+
+export interface TodoItem {
+  id: string;
+  title: string;
+  category: BlockCategory;
+  notes?: string;
+  estimatedMinutes?: number;
+  // Recurrence
+  recurrence: RecurrenceType;
+  recurrenceDays?: number[]; // 0=Mon…6=Sun for 'weekly' and 'custom'
+  dueDate?: string; // YYYY-MM-DD for non-recurring one-offs
+  // Completion: set of YYYY-MM-DD dates on which this was ticked
+  completedDates: string[];
+  createdAt: string; // ISO timestamp
+}
+

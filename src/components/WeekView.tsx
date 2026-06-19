@@ -1,7 +1,8 @@
 import React from 'react';
-import { format, isSameDay, isToday } from 'date-fns';
-import { TimeBlock } from '../types';
+import { format, isToday } from 'date-fns';
+import { TimeBlock, TodoItem } from '../types';
 import TimeBlockChip from './TimeBlockChip';
+import { getPendingTodosForDate } from '../utils/todoUtils';
 
 const DAY_START_H = 6;
 const DAY_END_H = 23;
@@ -10,11 +11,12 @@ const HOUR_COUNT = DAY_END_H - DAY_START_H;
 interface Props {
   weekDays: Date[];
   blocks: TimeBlock[];
+  todos: TodoItem[];
   onDayClick: (date: Date, hour: number) => void;
   onBlockClick: (block: TimeBlock) => void;
 }
 
-export default function WeekView({ weekDays, blocks, onDayClick, onBlockClick }: Props) {
+export default function WeekView({ weekDays, blocks, todos, onDayClick, onBlockClick }: Props) {
   const hours = Array.from({ length: HOUR_COUNT }, (_, i) => DAY_START_H + i);
 
   function handleColumnClick(day: Date, e: React.MouseEvent<HTMLDivElement>) {
@@ -30,12 +32,21 @@ export default function WeekView({ weekDays, blocks, onDayClick, onBlockClick }:
       {/* Header row */}
       <div className="week-header">
         <div className="time-gutter" />
-        {weekDays.map((day) => (
-          <div key={day.toISOString()} className={`day-header ${isToday(day) ? 'today' : ''}`}>
-            <span className="day-name">{format(day, 'EEE')}</span>
-            <span className="day-num">{format(day, 'd')}</span>
-          </div>
-        ))}
+        {weekDays.map((day) => {
+          const dateStr = format(day, 'yyyy-MM-dd');
+          const pendingCount = getPendingTodosForDate(todos, dateStr).length;
+          return (
+            <div key={day.toISOString()} className={`day-header ${isToday(day) ? 'today' : ''}`}>
+              <span className="day-name">{format(day, 'EEE')}</span>
+              <span className="day-num">{format(day, 'd')}</span>
+              {pendingCount > 0 && (
+                <span className="day-task-badge" title={`${pendingCount} pending task${pendingCount > 1 ? 's' : ''}`}>
+                  {pendingCount}
+                </span>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Grid */}
